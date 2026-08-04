@@ -1,171 +1,377 @@
 ---
-name: book-distiller-universal
-description: 【书籍榨干器·通用版】从epub/pdf/md文件提取书籍完整知识的通用型Skill。环境自检、交互引导，支持单文件和批量处理，适配macOS和Windows。触发词：拆书、拆解、榨干、蒸馏。
-author: 宝藏彬少
-version: 2.0.0
-created: 2026-07-06
-tags:
-  - 书籍
-  - 拆解
-  - 蒸馏
-  - epub
-  - pdf
+name: book-distiller
+description: 【书籍榨干器】从epub/pdf/md文件提取书籍的完整知识：心智模型、关键概念、金句、案例、反模式、行动清单。
+  用户提供文件并说「拆解」「蒸馏」「榨干」时触发。命名规范化提取干净书名作为基准名（去副标题/括号/作者冗余，保留系列号），
+  转换后自动清理HTML标签、坏图片链接。输出路径读 config.json（默认知识库收集箱/书籍拆解，不存在自动创建）。
+author: 彬少
+version: 1.1.0
+created: 2026-06-25
+updated: 2026-07-06
+metadata:
+  hermes:
+    tags: [书籍, 拆解, 蒸馏, 榨干, epub, pdf]
+    category: personal
 ---
 
-# 【书籍榨干器·通用版】
+# 书籍榨干器
 
 > 每一本书的知识，100%提取出来，不浪费一页纸。
-
-**书籍榨干器** 是一个通用型 AI 拆书 Skill。你提供 epub/pdf/md 文件，它自动提取出核心命题、关键概念、案例、金句、行动清单等结构化知识。
-
----
-
-## 简介
-
-| 项目 | 说明 |
-|------|------|
-| **用途** | 把一本书的核心知识提取成结构化拆解文档 |
-| **输入** | epub / pdf / md 文件（单本）或含这些文件的文件夹（批量） |
-| **输出** | 一份 Markdown 拆解文档，含核心命题、概念、案例、金句、反模式、行动清单 |
-| **前置条件** | 需要安装 pandoc + Python 3（环境检测会自动检查） |
-| **适用平台** | macOS / Windows |
-| **适用 Agent** | Hermes、MiMo Code、Codex 等支持文件操作和代码执行的 AI 编程助手 |
 
 ---
 
 ## 快速开始
 
-只需对 AI 说一句话：
-
-> **「拆解这本书，文件在 /Users/xxx/Downloads/思考快与慢.epub」**
-
-AI 会自动完成：
-环境检测 → 格式转换 → 通读提取 → 输出文档 → 移动已拆解 → 质量检查
-
-更多触发方式见下方「使用方式」表格。
-
----
-
-## 使用方式
-
-用户通过以下方式触发：
-
-| 用户说 | 触发模式 |
-|--------|---------|
-| 「拆解这本书，文件在 xxx.epub」 | 单文件模式 |
-| 「帮我拆解这个文件夹，路径在 xxx」 | 批量模式 |
-| 「榨干这本书」/「蒸馏这本书」 | 单文件模式 |
-
-收到指令后，自动判断模式并开始执行。
+```
+用户：提供epub/pdf/md文件 + "拆解这本书"
+→ Step 1：格式转换（epub→md），清理残留格式
+→ Step 2：通读全文，提取所有概念、金句、案例、反模式
+→ Step 3：写入完整拆解文档（15KB+）
+→ Step 4：质量检查，确认输出
+```
 
 ---
 
-## 模式选择
+## 核心理念
 
-本 Skill 支持两种模式：
+这个技能只做一件事：**从一本书中提取所有有价值的内容**。
 
-| 模式 | 适用场景 | 用户提供 |
-|------|---------|---------|
-| **单文件模式** | 第一次使用、只想拆一本书 | 一个 epub/pdf/md 文件路径 |
-| **批量模式** | 有多本书要拆、熟悉流程后 | 一个文件夹路径 |
+### 什么是「榨干」
+
+- **完整提取** — 所有独立概念单独列出，不合并、不省略、不人为限制篇幅
+- **保留原话** — 金句保留书中原话，案例保留细节，不做转述精简
+- **结构清晰** — MOC + 章节 + 附录 的多文件架构，核心内容在前，附录在后
+- **可回顾** — 拆解文档要方便日后翻阅，不是写完了就扔
+
+### 什么是不要做
+
+- ❌ 提取图片、封面、插图、图表（只保留文字内容）
+- ❌ 保留目录页、版权页、出版社信息、广告页
+- ❌ 为了篇幅限制而省略任何有价值的框架或概念
+- ❌ 合并多个独立概念为一个
+- ❌ 用自己的话概括代替书中原话
+- ❌ 只写结论不写论证过程
+
+### 优先级
+
+```
+完整 > 原话 > 结构 > 篇幅
+```
+
+宁可长，不要漏。拆给自己看的，不是出版。
 
 ---
 
-## 📄 单文件模式
+## 书籍蒸馏流程
 
-### 第一步：环境检测
+### 🔴 环境检测（首次使用自动执行）
 
-用户提供文件路径后，先检查环境。
-
-**检查方式：** 尝试执行以下命令。如果能跑通，说明工具已安装；如果报错，引导用户安装。
+在开始拆书之前，先检查当前环境是否具备所有工具：
 
 ```bash
-# 检查 pandoc（epub→md 转换）
-pandoc --version
+# 检查 pandoc（epub/md 转换核心工具）
+if ! command -v pandoc &>/dev/null; then
+    echo "⚠️ 缺少 pandoc — 用于 epub→md 转换"
+    echo "   macOS: brew install pandoc"
+    echo "   Windows: winget install pandoc 或官网下载"
+    echo "   安装后重新启动即可"
+    exit 1
+fi
 
-# 检查 python（格式清理）
-# macOS: python3 --version
-# Windows: python --version
+# 检查 python3（用于格式清理和批量处理）
+if ! command -v python3 &>/dev/null; then
+    echo "⚠️ 缺少 python3 — 用于格式清理和批量处理"
+    echo "   请安装 Python 3.x (python.org)"
+    exit 1
+fi
+
+# 检查 opencc（可选，繁体→简体转换）
+if command -v opencc &>/dev/null; then
+    echo "✅ opencc 已安装 → 支持繁体→简体自动转换"
+else
+    echo "ℹ️  opencc 未安装 — 处理繁体书籍时需手动安装"
+    echo "   macOS: brew install opencc"
+fi
+
+echo "✅ 环境就绪"
 ```
 
-**检测报告模板：**
+> **说明**：pandoc 是核心依赖（epub→md 全靠它），python3 用来清理格式垃圾，opencc 只有拆繁体书时才需要。如果检测到缺失，安装后重新运行即可。
+
+### 🟡 开始前确认
+
+- 确认文件路径正确
+- 确认文件格式（epub/pdf/md）
+- **检测输出路径：**
+  - 读 config.json 的 `output_path`
+  - **如果路径不存在（含 `01｜书籍原文`、`02｜蒸馏拆解` 子目录）→ 自动创建**（`mkdir -p`），不要报错、不要等用户手动建
+  - 已有配置 → 使用配置路径
+  - 询问：「使用默认路径吗？」或「指定其他路径？」
+
+### 🟡 源文件命名检查（可选操作，不影响拆解命名）
+
+- 用 clean_book_title 对比原文件名与干净书名
+- 若不一致（原文件含副标题/括号/作者等冗余）→ **询问用户**：「检测到原文件名含冗余，是否将源文件重命名为「{干净书名}.{ext}」？」
+  - 用户同意 → 重命名源文件（epub/pdf/md 均可）
+  - 用户拒绝/跳过 → 源文件保留原名
+- **无论是否重命名源文件**，转换出的书籍原文和拆解文件一律用干净书名——源文件处理与拆解命名互不影响
+
+### 默认路径
 
 ```
-📋 环境检测结果：
-✅ pandoc — 已就绪
-✅ Python — 已就绪
-→ 可以开始拆书
+{config.json output_path}/          # 当前：你的知识库收集箱/书籍拆解（config.json 可改）
+├── 01｜书籍原文/           # 转换后的md文件（用干净书名命名）
+│   └── {干净书名}.md
+└── 02｜蒸馏拆解/           # 拆解后的文档
+    └── {干净书名}-完整拆解.md
 ```
 
-如果缺少工具，给出安装指引，让用户装完再试。
+> 输出到「收集箱/书籍拆解」是设计：拆解产物先进收集箱（处理中），确认质量后由用户决定是否归档到知识库正式位置。给别人用时，对方改 config.json 的 output_path 指向自己的路径即可——目录不存在会自动创建。
 
-### 第二步：格式转换
+### 配置文件
 
-用 `pandoc` 把 epub/pdf 转成 Markdown 文本。
+- 位置：`Skill 安装目录下的 config.json（通常在 ~/.hermes/skills/ 下）`
+- 内容：记录用户指定的输出路径
+- 首次使用时自动创建，后续使用直接读取
 
+### Step 1: 格式转换
+
+**按输入格式处理：**
+- `.epub` → 走下方「epub转md」
+- `.pdf` → 走下方「pdf转md」
+- `.md` → **跳过 pandoc 转换**：源 md 即书籍文本。直接跑「清理epub残留格式」（clean_md 清理 HTML 残留），并复制为 `01｜书籍原文/{干净书名}.md`——若源文件名不干净，**复制成干净名**（源文件保留原样，或按「源文件命名检查」询问结果处理）
+
+**epub转md：**
 ```bash
-# macOS / Windows（命令相同，pandoc 跨平台）
-pandoc "输入文件路径" -t markdown --wrap=none -o "临时文件路径.md"
+# 第一步：提取干净书名（见下方 clean_book_title 函数），全流程基准名
+# 原文件名可能带副标题/括号/作者，统一规范化后再转换
+BOOK_TITLE="$(python3 -c "
+import re, sys
+def clean_book_title(filename):
+    name = filename
+    name = re.sub(r'（[^）]*）', '', name)
+    name = re.sub(r'\([^)]*\)', '', name)
+    name = re.sub(r'\s*=\s*[^（(]*$', '', name)
+    name = re.sub(r'[：:].*$', '', name)
+    name = re.sub(r'\s*--?\s*\S+$', '', name)
+    name = re.sub(r'\s*[\[\[].*$', '', name)
+    name = re.sub(r'\s{2,}', ' ', name)
+    return name.strip()
+print(clean_book_title(sys.argv[1]))
+" "${file%.epub}")"
+echo "干净书名: $BOOK_TITLE"
+
+# 基本转换（只提取文字，跳过图片）
+pandoc "$file" -t markdown --wrap=none -o "${BOOK_TITLE}.md"
+
+# 转换后清理非文字内容
+python3 -c "
+import re, sys
+with open('${BOOK_TITLE}.md', 'r') as f:
+    content = f.read()
+# 删除图片引用
+content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
+# 删除 SVG/HTML
+content = re.sub(r'<svg[^>]*>.*?</svg>', '', content, flags=re.DOTALL)
+content = re.sub(r'<[^>]+>', '', content)
+# 删除 CSS 类标记
+content = re.sub(r'\{\.?[a-zA-Z][^}]*\}', '', content)
+# 合并连续空行
+content = re.sub(r'\n{4,}', '\n\n\n', content)
+with open('${BOOK_TITLE}.md', 'w') as f:
+    f.write(content)
+"
+
+# 批量处理（每本先 clean_book_title 提取干净书名，同单本逻辑）
+for file in *.epub; do
+  BOOK_TITLE="$(python3 -c "
+import re, sys
+def clean_book_title(filename):
+    name = filename
+    name = re.sub(r'（[^）]*）', '', name)
+    name = re.sub(r'\([^)]*\)', '', name)
+    name = re.sub(r'\s*=\s*[^（(]*$', '', name)
+    name = re.sub(r'[：:].*$', '', name)
+    name = re.sub(r'\s*--?\s*\S+$', '', name)
+    name = re.sub(r'\s*[\[\[].*$', '', name)
+    name = re.sub(r'\s{2,}', ' ', name)
+    return name.strip()
+print(clean_book_title(sys.argv[1]))
+" "${file%.epub}")"
+  pandoc "$file" -t markdown --wrap=none -o "${BOOK_TITLE}.md"
+  # 同样清理非文字内容
+  python3 -c "
+import re
+with open('${BOOK_TITLE}.md', 'r') as f:
+    content = f.read()
+content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
+content = re.sub(r'<svg[^>]*>.*?</svg>', '', content, flags=re.DOTALL)
+content = re.sub(r'<[^>]+>', '', content)
+content = re.sub(r'\{\.?[a-zA-Z][^}]*\}', '', content)
+content = re.sub(r'\n{4,}', '\n\n\n', content)
+with open('${BOOK_TITLE}.md', 'w') as f:
+    f.write(content)
+"
+done
 ```
 
-转换后，用 Python 清理残留的格式垃圾。把以下代码中的 `文件路径` 替换为实际的 md 文件路径，然后执行：
+> ⚠️ **不要用 `sed` 从 metadata 提取书名再裁剪**——`sed 's/ - .*//'` 会把作者名砍掉（`成法 - 稻盛和夫` → `成法`），`sed 's/[:：].*//'` 会把副标题砍掉（`加分：脱颖而出` → `加分`）。直接用文件名最可靠。
+
+**命名规范化（重要）**：原文件名可能很长（副标题、括号、作者、英文对照等冗余），转换前统一提取**干净书名**作为全流程基准名：
 
 ```python
 import re
-
-input_file = "替换为实际的md文件路径"
-
-with open(input_file, 'r', encoding='utf-8') as f:
-    content = f.read()
-
-# 删除图片引用
-content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
-# 删除HTML/SVG标签
-content = re.sub(r'<[^>]+>', '', content)
-# 删除CSS类标记
-content = re.sub(r'\{\.?[a-zA-Z][^}]*\}', '', content)
-# 合并连续空行（超过3行的缩成3行）
-content = re.sub(r'\n{4,}', '\n\n\n', content)
-
-with open(input_file, 'w', encoding='utf-8') as f:
-    f.write(content)
-
-print(f"✅ 格式清理完成：{input_file}")
+def clean_book_title(filename):
+    """从文件名提取干净书名。顺序：去括号 > 去=英文标题 > 去：副标题 > 去--作者 > 去[出版社]"""
+    name = filename
+    name = re.sub(r'（[^）]*）', '', name)                  # 去 （副标题）全角括号
+    name = re.sub(r'\([^)]*\)', '', name)                 # 去 (副标题/来源) 半角括号
+    name = re.sub(r'\s*=\s*[^（(]*$', '', name)           # 去 =英文标题
+    name = re.sub(r'[：:].*$', '', name)                  # 去 ：后描述（副标题）
+    name = re.sub(r'\s*--?\s*\S+$', '', name)             # 去 --作者 / - 作者
+    name = re.sub(r'\s*[\[\[].*$', '', name)             # 去 [出版社]
+    name = re.sub(r'\s{2,}', ' ', name)                   # 合并多余空格
+    return name.strip()
 ```
 
-**如何执行这段 Python 代码：**
+> ⚠️ **顺序很重要**：必须先删括号再删作者——否则 `(Z-Library)` 里的连字符会被当成作者分隔符误删（实测坑）。示例：`三十岁，一切刚刚开始 (李尚龙) (Z-Library)` → `三十岁，一切刚刚开始`；`重来2：更为简单高效的工作方式` → `重来2`。
 
-| 方式 | 说明 |
-|------|------|
-| 有代码执行环境 | 直接运行上面的代码，把路径替换成实际 md 文件路径 |
-| 只有终端/命令行 | 把代码保存为 `.py` 文件，用 `sys.argv[1]` 接收路径参数，然后执行 |
-| 其他 | 只要能运行 Python 就行，不限方式 |
+- **保留系列号**：重来2、好好说话2、财务自由之路Ⅲ 等数字/罗马数字不删（区分系列）
+- 提取后全流程统一使用干净名：`{干净书名}.md`（书籍原文）、`{干净书名}-完整拆解.md`（拆解）
+- **禁止 subagent 自行简化/改名**——命名由主 agent 统一决定，subagent 只按给定名字输出
 
-> 批量处理多文件时，建议用第二种方式（创建临时脚本 + 传参循环调用）。
+**pdf转md：**
+```bash
+# 文件名若带冗余（副标题/括号/作者），先 clean_book_title 提取干净名再转换（同 epub）
+BOOK_TITLE="$(python3 -c "
+import re, sys
+def clean_book_title(filename):
+    name = filename
+    name = re.sub(r'（[^）]*）', '', name)
+    name = re.sub(r'\([^)]*\)', '', name)
+    name = re.sub(r'\s*=\s*[^（(]*$', '', name)
+    name = re.sub(r'[：:].*$', '', name)
+    name = re.sub(r'\s*--?\s*\S+$', '', name)
+    name = re.sub(r'\s*[\[\[].*$', '', name)
+    name = re.sub(r'\s{2,}', ' ', name)
+    return name.strip()
+print(clean_book_title(sys.argv[1]))
+" "${file%.pdf}")"
+echo "干净书名: $BOOK_TITLE"
 
-### 第三步：通读全文
+# 方法1：pandoc（推荐，只提取文字）
+pandoc "$file" -t markdown --wrap=none -o "${BOOK_TITLE}.md"
 
-通读清理后的 md 文件，提取书中所有核心内容。
+# 方法2：pdftotext（纯文字提取，跳过图片）
+pdftotext "$file" - | python3 -c "
+import sys
+content = sys.stdin.read()
+# 清理多余空行
+import re
+content = re.sub(r'\n{4,}', '\n\n\n', content)
+print(content)
+" > "${BOOK_TITLE}.md"
 
-**大文件处理规则：**
-- 文件不大 → 一次读完
-- 文件很大 → 分多次读取，每次读一部分，直到全部读完
+# 方法3：python工具（如果以上都失败）
+pip install pymupdf
+python3 -c "
+import fitz
+doc = fitz.open('$file')
+text = ''
+for page in doc:
+    text += page.get_text()
+with open('${BOOK_TITLE}.md', 'w') as f:
+    f.write(text)
+"
+```
 
-**提取清单：**
+**清理epub残留格式：**
+转换完成后，用 Python 脚本清理非文字内容：
+```python
+import re, os
 
-| 提取项 | 说明 |
-|--------|------|
-| **核心命题** | 这本书想论证什么？一句话概括 |
-| **关键概念** | 作者定义了什么新概念、新术语？每个独立成段 |
-| **心智模型/框架** | 作者用了什么分析框架？列出结构 |
-| **案例** | 书中用什么案例支撑论点？保留细节 |
-| **金句** | 原话保留，标注章节位置 |
-| **反模式** | 作者反对什么做法？ |
-| **行动清单** | 读完可以做什么？ |
+def clean_md(filepath):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
 
-### 第四步：输出拆解文档
+    # 1. 删除所有图片引用（封面、插图、图表）
+    content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
 
-按以下格式写入文件。输出路径默认为原文件同目录，文件名为 `{原文件名}-完整拆解.md`。
+    # 2. 删除SVG/HTML标签
+    content = re.sub(r'<svg[^>]*>.*?</svg>', '', content, flags=re.DOTALL)
+    content = re.sub(r'<[^>]+>', '', content)
+
+    # 3. 删除CSS类标记
+    content = re.sub(r'\{\.?[a-zA-Z][^}]*\}', '', content)
+
+    # 4. 删除常见非文字页面（目录、版权、出版社信息）
+    # 匹配 "目录"、"版权"、"出版"、"印刷"、"发行" 等段落
+    content = re.sub(r'^.*?(版权信息|出版信息|印刷|发行|CIP数据|ISBN).*$', '', content, flags=re.MULTILINE)
+
+    # 5. 合并连续空行
+    content = re.sub(r'\n{4,}', '\n\n\n', content)
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+
+clean_md('${BOOK_TITLE}.md')
+```
+
+**路径处理：**
+- 原文：`{配置路径}/01｜书籍原文/{BOOK_TITLE}.md`
+- 最终文档：`{配置路径}/02｜蒸馏拆解/{BOOK_TITLE}-完整拆解.md`
+
+🟡 **CHECKPOINT：格式转换确认**
+- 确认转换成功
+- 确认文件大小合理
+
+🟡 **CHECKPOINT：书名关键词校验（防装错书）**
+- 转换完成后，取干净书名的**核心词**在 md 正文中搜索
+- **核心词提取**：干净书名去掉系列号（重来2 → 重来）、去掉通用词（「入门」「指南」「完全手册」等）后，剩余的最短有区分度词（2-6 字）
+- **0 次出现的两种可能**：① 源文件装错书（实战：「麦肯锡图表工作法.epub」实为《高频交易员》，「麦肯锡」全书 0 次）；② 正常——系列书/主题书正文不写书名（如《重来2》正文讲远程办公，不一定出现「重来」）
+- 处理：**报告用户确认**（附核心词与出现次数），由用户决定继续拆还是另找源文件；**不要自行判定装错书**
+
+🟡 **CHECKPOINT：覆盖检查（必须在写入/分发 subagent 之前做）**
+- 检查目标文件 `{配置路径}/02｜蒸馏拆解/{干净书名}-完整拆解.md` 是否已存在
+- **已存在** → 明确告知用户，询问「是否覆盖？」，用户确认后才进入 Step 2
+- 未经确认不写入；**绝不自动创建副本**（`xxx 1.md`、`xxx-copy.md` 一律禁止）
+
+### Step 2: 通读全文并提取
+
+用Read工具通读全文（大文件需多次Read，offset递增）。目标是100%覆盖。
+
+> ⚠️ **read_file 误判 Binary 的坑（2026-08-04 实测）**：read_file 工具对「中文内容为主、超过约 1KB 的文件」可能误报 `Binary file - cannot display as text`——文件本身完全正常（`file` 命令显示 Unicode text、python 读取无碍、无 NUL 字节），是工具二进制启发式对非 ASCII 占比高的采样判定过严。**遇到就改用 python 分段读取兜底，不要跟 read_file 较劲**：
+> ```bash
+> python3 -c "
+> with open('{文件路径}', encoding='utf-8') as f:
+>     content = f.read()
+> lines = content.split('\n')
+> print(len(lines))
+> "
+> # 然后分段 print（如每段 300-500 行，多次执行确保读完 100%）
+> ```
+> 派 subagent 拆书时，**必须在 subagent prompt 里明确指示用 python 读取**，否则 subagent 的 read_file 会同样失败。
+
+通读的同时，提取书中出现的每一个：
+- **核心命题** — 这本书想论证什么
+- **关键概念** — 作者定义了什么新概念、新术语
+- **心智模型/框架** — 作者用了什么分析框架
+- **核心公式** — 如果有公式或模型图
+- **案例** — 书中用了什么案例来支撑论点
+- **金句** — 原话保留，标注章节位置
+- **反模式** — 作者反对什么做法
+- **行动清单** — 读完可以做什么
+
+**原则**：不要合并、不要省略、不要精简。保留书中原话金句和具体案例细节。
+
+如果书籍内容量较大（>2000行或概念密集），用 `delegate_task` 分拆多个 subagent 并行提取：
+- subagent 1：提取核心概念和心智模型
+- subagent 2：提取案例、金句和引用
+- subagent 3：提取反模式、行动清单和隐含假设
+每个 subagent 传入 Step 1 转换后的 md 文件路径，避免重复读取。
+
+### Step 3: 写入完整文档
+
+拆解文档格式如下：
 
 ```markdown
 # [书名] - 完整拆解
@@ -178,8 +384,11 @@ print(f"✅ 格式清理完成：{input_file}")
 
 ### [概念1名称]
 **定义**：[一句话描述]
+
 **机制**：[如何运作]
+
 **案例**：[书中的具体案例]
+
 **启示**：[可操作的行动建议]
 
 ### [概念2名称]
@@ -194,7 +403,12 @@ print(f"✅ 格式清理完成：{input_file}")
 
 ## 金句集锦
 
-> "[原话]" — 第X章
+> "[原话1]" — 第X章
+
+> "[原话2]" — 第X章
+...
+
+> **空行规范（必须遵守）**：金句与金句之间、定义/机制/案例/启示之间必须空行，否则 Obsidian 渲染会挤在一起（连续 `>` 引用会被合并成一个引用块）。
 
 ---
 
@@ -205,10 +419,22 @@ print(f"✅ 格式清理完成：{input_file}")
 
 ---
 
+## 批判性审视
+
+| 书中观点 | 质疑 | 我的看法 |
+|---------|------|---------|
+
+---
+
 ## 行动清单
+
+读完这本书，我可以：
 
 1. [具体行动1]
 2. [具体行动2]
+...
+
+> **分组规范**：行动清单若按视角/主题分组（如员工视角/老板视角/通用），每组列表**各自从 1 开始编号**，不要跨组连续编号（粗体标题会割断列表，渲染易错乱）。
 
 ---
 
@@ -217,250 +443,198 @@ print(f"✅ 格式清理完成：{input_file}")
 [全书最核心的一句话]
 ```
 
-### 第五步：移动已拆解文件
+### Step 4: 质量检查
 
-拆解完成后，把原文件移到「已拆解」目录，避免下次重复处理。
-
-**如果没有「已拆解」目录，在原文件同目录创建一个**，命名 `已拆解/`。
-
-```bash
-# macOS
-mkdir -p "原文件所在目录/已拆解"
-mv "原文件路径" "原文件所在目录/已拆解/"
-
-# Windows（PowerShell）
-New-Item -ItemType Directory -Force -Path "原文件所在目录\已拆解"
-Move-Item "原文件路径" "原文件所在目录\已拆解\"
-```
-
-> 如果用户说「不要移动」，则跳过此步。
-
-### 第六步：质量检查
-
-- 文档大小是否合理（目标 15KB+）？
-- 是否覆盖了所有主要章节？
+- 文档大小是否达标（**目标15KB+，不设上限**——宁可长不要漏）？
+- **结构五件套是否齐全**：金句集锦 / 反模式清单 / 批判性审视 / 行动清单 / 一句话总结？
+- **拆解/原文比例检查**：拆解文档 ≤ 原文 ~**80%**——正常结构化重构约 30-60%（实战 5 本：84-188KB 拆解 vs 173-463KB 原文 ≈ 30-55%）。超过 80% → 警惕**原文照搬**（AI 偷懒复制段落而非重构），应重新拆
+- 是否覆盖了书中的所有主要章节？
+- 每个概念是否独立成段？
 - 是否包含金句、案例、行动清单？
-- 核心命题是否准确？
 
-检查通过后，告知用户文件保存位置。
+🔴 **CHECKPOINT：最终输出确认**
+- 展示文档结构和大小
+- 展示提取的概念/框架数量
+- 确认输出路径：`{配置路径}/02｜蒸馏拆解/{干净书名}-完整拆解.md`
+- 覆盖与否已在分发前确认（见「覆盖检查」）；此处只确认输出质量和发布
+- 等用户确认后再发布
+
+### Step 5: 移动源文件（可选）
+
+拆解完成后，把源文件（epub/pdf/md）移到「已拆解」目录，避免下次重复处理：
+- 原文件所在目录已有 `已拆解/` → 直接移入
+- 没有 → 在原文件同目录创建 `已拆解/` 并移入
+- 用户说「不要移动」→ 跳过此步（源文件留在原地，用户自行管理）
 
 ---
 
-## 📚 批量模式
+## 特殊场景
 
-### 第一步：环境检测（同上）
+### epub批量处理
 
-### 第二步：扫描文件夹
+1. 用pandoc批量转换（python脚本循环调用），每本先 clean_book_title 提取干净书名
+2. 清理epub残留格式
+3. 每本执行「书名关键词校验」（见 Step 1 CHECKPOINT），0 次出现时报告用户确认，不要闷头拆
+4. 按文件大小从小到大排序，优先处理小文件
+5. **覆盖检查（分发 subagent 之前，必须先做）**：列出所有目标文件 `02｜蒸馏拆解/{干净书名}-完整拆解.md`，标记其中已存在的 → 告知用户清单，询问「这些已存在，是否覆盖？」；用户确认后才进入下一步；未经确认不写入，**绝不自动创建副本**
+6. **每本一个 subagent 并行拆解**（`delegate_task`，一次 3 个并行；每本 subagent 必须包含下述铁律 prompt）
+7. 拆解完成后**移动 epub 到「已拆解」目录**，避免下次重复处理。分两种情况：
+   - **待拆解/已拆解 结构**（用户整理的批量库）→ 移入与待拆解同级的「已拆解」目录
+   - **单本/任意路径直接给文件** → 在原文件**同目录**创建 `已拆解/` 子目录并移入（没有就 `mkdir -p`）
+   - 如果用户说「不要移动」，跳过此步
+8. 汇总报告：成功/失败清单、输出路径、质量检查（大小 + 结构五件套）
 
-列出指定文件夹中的所有 epub/pdf/md 文件。
+**subagent prompt 模板**：见 `templates/subagent-prompt.md`（必须原文使用，铁律行不要删——它们是输出密度的关键，实战产出 84-188KB/本；删了会退回 17KB 的浓缩版）。
 
-```bash
-# macOS
-ls "文件夹路径"/*.epub 2>/dev/null
-ls "文件夹路径"/*.pdf 2>/dev/null
-ls "文件夹路径"/*.md 2>/dev/null
+**为什么每本一个 subagent 而不是多维拆**：单本专注 100% 通读，输出密度最高（实战 84-188KB/本）；按维度拆（概念/案例/金句分开）协调成本高、易遗漏、命名难对齐。
 
-# Windows（PowerShell）
-Get-ChildItem "文件夹路径" -Include *.epub, *.pdf, *.md
+### 文件名对齐（三个目录必须一致）
+
+当 epub、书籍原文、蒸馏拆解三个目录的文件名不一致时，以**干净书名**为准（见 Step 1 命名规范化）：
+
+```
+01-书籍｜epub/已拆解/书名 - 作者.epub     ← 源头（保留原始名）
+01｜书籍原文/干净书名.md                   ← 转换后（命名规范化）
+02｜蒸馏拆解/干净书名-完整拆解.md          ← 拆解后（基准名 + 后缀）
 ```
 
-把文件清单展示给用户确认。例如：
+**常见不一致原因：**
+- epub 转 md 时用 metadata 提取书名 + sed 裁剪，丢失了作者/副标题（已修复为直接用文件名）
+- 批量处理时 sed 把 `- `（空格短横线空格）替换成了 `-`（无空格）
+- 中文冒号 `：` 被 sed 砍掉
 
-```
-📂 找到以下文件（共 8 本）：
-1. 思考快与慢.epub
-2. 穷查理宝典.epub
-3. 影响力.epub
-...
-确认开始拆解？（Y/N）
-```
-
-### 第三步：批量格式转换
-
-遍历所有文件，逐个执行格式转换 + Python 清理。
-
-**支持的文件类型及处理方式：**
-
-| 类型 | 处理方式 |
-|------|---------|
-| `.epub` | pandoc 转换 → Python 清理 |
-| `.pdf` | pandoc 或 pdftotext 转换 → Python 清理 |
-| `.md` | 直接使用，跳过转换步骤 |
-
-**先创建一个临时 Python 清理脚本**，内容如下（用 `sys.argv[1]` 接收路径参数）：
-
+**对齐脚本：**
 ```python
-import re, sys
-input_file = sys.argv[1]
-with open(input_file, 'r', encoding='utf-8') as f:
-    content = f.read()
-content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
-content = re.sub(r'<[^>]+>', '', content)
-content = re.sub(r'\{\.?[a-zA-Z][^}]*\}', '', content)
-content = re.sub(r'\n{4,}', '\n\n\n', content)
-with open(input_file, 'w', encoding='utf-8') as f:
-    f.write(content)
-print(f"✅ 清理完成：{input_file}")
+import os, difflib
+
+epub_names = {os.path.splitext(f)[0] for f in os.listdir(epub_dir)}
+md_names = {os.path.splitext(f)[0] for f in os.listdir(md_dir)}
+
+# Find mismatches via fuzzy match
+for ep in epub_names - md_names:
+    close = difflib.get_close_matches(ep, md_names, n=1, cutoff=0.7)
+    if close:
+        # Rename md to match epub
+        os.rename(os.path.join(md_dir, close[0]+'.md'), os.path.join(md_dir, ep+'.md'))
 ```
 
-**如果本 Skill 目录下有 `scripts/clean_md.py`，直接使用它**，路径为 `skill目录/scripts/clean_md.py`。也可以用 `/tmp/clean_md.py` 创建临时副本。
+**验证：** 三个目录的去扩展名文件集必须完全相等（数量和名称）。
 
-保存后执行批量转换：
+### 内容整合（从拆解到知识手册）
+
+当用户要求将大量蒸馏拆解整合为知识手册时：
+
+1. **分类** — 用关键词匹配将书籍分入 15-20 个主题（execute_code 脚本）
+2. **并行整合** — 用 delegate_task 批量处理，每批 3 个子 agent，每个负责 2-3 个主题
+3. **每个子 agent 的任务**：读取主题下所有书籍 → 按逻辑重组（不是逐书摘要）→ 标注来源 → 写入文件
+4. **质量检查** — 统计文件大小、检查主题重叠、识别缺失主题
+5. **迭代修复** — 拆分过大主题、补充缺失章节、加交叉引用
+6. **建 MOC** — 总览表 + 学习路线（按场景推荐）+ 数据来源
+
+**已知陷阱：**
+- ❌ 用子 agent 更新 MOC 时，如果其他子 agent 还在创建新章节，MOC 会漏掉后来的章节 → 等所有章节完成后再建/更新 MOC
+- ❌ 让子 agent「节省篇幅」→ 用户明确要求「不能节省篇幅，不能偷懒」
+- ❌ 15 个以上主题用一个「其他」兜底 → 必须拆分为独立文件，否则读者跳跃感强
+
+### 大文件处理（>10000行）
+
+1. 用Read工具分段读取（offset递增，每次2000行）——若 read_file 报 Binary（中文为主大文件的误判，见 Step 2 警告），改用 python 分段 print 读取
+2. 或启动 subagent 让它自己分段读取（用 `delegate_task`，prompt 里注明用 python 读取）
+3. 提取时按主题分组，避免遗漏
+
+### 跨语言书籍
+
+- epub转md后检查语言
+- 如果是繁体中文 → 用opencc转换为简体：`opencc -c t2s -i input.md -o output.md`
+- 如果是英文 → 用agent翻译关键概念的名称
+
+### 其他格式
+
+**pandoc 直接支持的格式**（docx / html / fb2 / odt / rtf / txt 等）：与 epub 流程一致，直接转换，之后走相同的「clean 书名 → 清理 → 校验 → 拆解」：
 
 ```bash
-# macOS 批量转换
-for ext in epub pdf; do
-  for file in "文件夹路径"/*.$ext; do
-    [ -f "$file" ] || continue
-    pandoc "$file" -t markdown --wrap=none -o "文件夹路径/$(basename "$file" .$ext).md"
-    python3 /tmp/clean_md.py "文件夹路径/$(basename "$file" .$ext).md"
-  done
-done
-# md 文件跳过转换，直接清理
-for file in "文件夹路径"/*.md; do
-  [ -f "$file" ] || continue
-  python3 /tmp/clean_md.py "$file"
-done
+pandoc "$file" -t markdown --wrap=none -o "${BOOK_TITLE}.md"
 ```
 
-```powershell
-# Windows 批量转换
-Get-ChildItem "文件夹路径" -Include *.epub, *.pdf, *.md | ForEach-Object {
-  if ($_.Extension -eq '.md') {
-    python C:\temp\clean_md.py $_.FullName
-  } else {
-    $mdPath = Join-Path $_.DirectoryName "$($_.BaseName).md"
-    pandoc $_.FullName -t markdown --wrap=none -o $mdPath
-    python C:\temp\clean_md.py $mdPath
-  }
-}
-```
+**mobi / azw3（Kindle 格式）**：pandoc 不支持，需先转 epub：
+- 安装 calibre：macOS `brew install calibre` / Windows `winget install calibre`
+- `ebook-convert 输入.mobi 输出.epub` → 转完后走 epub 流程
+- 未装 calibre 时**提示用户**，不静默失败、不假装成功
 
-> **输出目录说明：** 转换后的 md 文件与原 epub 放在同一目录。后续的拆解文档也默认输出到该目录。用户也可以指定单独的输出目录。
+**不支持的格式**：明确告知用户无法处理，建议转 epub 后重试。
 
-### 第四步：并行拆解
+### Windows 环境
 
-对每本已转换的 md 文件执行通读和提取（流程同单文件模式第三步）。
+本 skill 主流程面向 macOS（pandoc + python3）。在 Windows 上使用时：python 命令改为 `python`（无 3 后缀），安装用 `winget install pandoc / python`，批量转换和移动已拆解用 PowerShell 命令——全部见 `references/windows-adaptation.md`。
 
-**并行策略：**
-
-**方案一：多 Agent 并行（推荐，速度快）**
-适用于 MiMo Code、Hermes 等支持多 Agent 的工具：
-- 根据文件数量启动子任务（建议 ≤ 5 个）
-- 每个子任务负责一本：通读 → 提取 → 写入拆解文档
-- 所有子任务完成后，汇总结果
-
-**方案二：逐本处理（兼容，速度慢）**
-适用于不支持并行的 Agent：
-- 按文件名排序，逐本处理
-- 每本完成后更新进度：「已完成 3/8 本...」
-
-每本的拆解文档独立输出，命名规则：`{原文件名}-完整拆解.md`
-
-### 第五步：汇总报告
-
-所有书拆解完成后，给用户一份汇总（输出目录默认为原文件所在目录）：
+### 错误恢复
 
 ```
-📊 拆解完成报告：
-✅ 成功：8 本
-❌ 失败：0 本
+if pandoc转换失败:
+  1. 检查pandoc是否安装: pandoc --version
+  2. if 未安装 → 安装: brew install pandoc
+  3. if 版本过旧 → 升级: brew upgrade pandoc
+  4. if 文件损坏 → 检查文件完整性
 
-文件位置：{原文件目录}
-├── 思考快与慢-完整拆解.md（28KB）
-├── 穷查理宝典-完整拆解.md（35KB）
-├── 影响力-完整拆解.md（22KB）
-...
-```
+if epub格式异常:
+  1. 检查文件扩展名是否正确
+  2. 尝试用calibre转换: calibre-debug -e input.epub
+  3. 如果仍然失败 → 提示用户检查文件
 
-如果有失败的，列出失败的文件和原因。
+if 大文件读取失败:
+  1. 检查文件大小: ls -lh file.md
+  2. if 超过100MB → 分段处理
+  3. if 编码问题 → 检查文件编码: file file.md
+  4. if 内存不足 → 分批处理
 
----
+if 提取的框架太少:
+  1. 检查是否通读全文
+  2. 检查是否遗漏了某些章节
+  3. 重新启动subagent，强调"不要合并、不要省略"
 
-## 核心原则
+if 输出文档不达标:
+  1. 检查文档大小: wc -c output.md
+  2. if 小于15KB → 补充更多细节
+  3. 检查是否包含所有必要部分（金句、案例、行动清单）
 
-```
-完整 > 原话 > 结构 > 篇幅
-```
+if 框架重复或冲突:
+  1. 检查是否有相似的框架
+  2. if 重复 → 合并或选择更完整的版本
+  3. if 冲突 → 保留两个版本，标注内在张力
 
-- 宁可长，不要漏
-- 不合并概念，不省略案例，不精简金句
-- 金句必须保留书中原话
-- 每个概念独立成段
+if subagent 卡住/无产出/超时:
+  1. 不要无限等待——超过预期时间（如 10 分钟无进展）主动取消
+  2. 取消后重新 spawn 该 subagent，prompt 强调「100% 通读 + 铁律」
+  3. 单本失败不影响其他本；批量中失败的单独记录，最后统一重试
 
----
-
-## 常见问题
-
-### Q：pandoc 没安装怎么办？
-
-**macOS：** 打开终端，运行 `brew install pandoc`
-**Windows：** 打开 PowerShell（管理员），运行 `winget install pandoc`；或去 pandoc.org 下载安装包
-安装后重新说「拆解这本书」就行。
-
-### Q：Python 没安装怎么办？
-
-**macOS：** 打开终端，运行 `brew install python`
-**Windows：** 打开 PowerShell（管理员），运行 `winget install python`；或去 python.org 下载
-> macOS 上用 `python3` 命令，Windows 上用 `python` 命令
-
-### Q：批量拆到一半卡住了怎么办？
-
-取消当前任务，检查哪些书已经拆完，哪些还没拆，从断点继续。建议每批不超过 **5 本**，不容易触发限速。
-
-### Q：Windows 上路径里有中文会乱码吗？
-
-PowerShell 对中文路径支持良好，直接用完整路径即可。如果遇到问题，尝试把文件移到路径不含中文的目录（如 `C:\books\`）。
-
-### Q：拆解文档太短了？
-
-有些书本身内容就少（如小册子、工具书）。如果确实有遗漏，告诉我哪本，我重新通读补充。
-
----
-
-## 输出示例
-
-**macOS 示例：**
-```
-~/Downloads/思考快与慢-完整拆解.md
-├── 核心命题：人类思维的两个系统
-├── 关键概念（12个）：系统1/系统2、锚定效应、可得性启发...
-├── 金句集锦（8条）
-├── 反模式清单（5条）
-├── 行动清单（6条）
-└── 一句话总结
-```
-
-**Windows 示例：**
-```
-C:\Users\用户名\Downloads\思考快与慢-完整拆解.md
-├── 核心命题：人类思维的两个系统
-├── 关键概念（12个）：系统1/系统2、锚定效应、可得性启发...
-├── 金句集锦（8条）
-├── 反模式清单（5条）
-├── 行动清单（6条）
-└── 一句话总结
+if 用户对输出不满意:
+  1. 询问具体哪里不满意
+  2. if 框架太多 → 精简，只保留核心
+  3. if 框架太少 → 补充更多细节
+  4. if 格式问题 → 调整输出格式
 ```
 
 ---
 
-## 各平台适配参考
+## 最后
 
-不同 AI 编程助手执行这个 Skill 的方式略有不同，但核心流程一致：
+**书籍蒸馏的核心承诺：每一本书的知识，都要100%提取出来，不浪费一页纸。**
 
-| 步骤 | Hermes | Codex | MiMo Code |
-|------|--------|-------|-----------|
-| **环境检测** | `terminal` 运行检测命令 | 在代码环境运行检测命令 | 在终端运行检测命令 |
-| **pandoc 转换** | `terminal` 执行 pandoc | 在代码环境用 subprocess 调用 pandoc | 在终端执行 pandoc |
-| **Python 清理** | `execute_code` 直接运行，或用 `terminal` 执行脚本 | 在代码环境直接运行 | 在终端执行 Python 脚本 |
-| **通读全文** | 用读取能力逐段读取，内容量大时分多次 | 逐段读取文件内容 | 读取文件内容 |
-| **写入输出** | 用写入工具写文件 | 用文件操作写文件 | 写入文件 |
-| **并行拆解** | `delegate_task` 多子任务 | 多会话或多线程 | 多 Agent 任务 |
-
-> 所有 Agent 的共同前提：系统需安装 pandoc 和 Python 3。
+一个好的拆解文档，让你不用重读整本书也能抓住它的核心——但如果你想深挖某个点，原书还在那里。
 
 ---
 
-## 许可证
+## 内容整合
 
-本 Skill 由 **宝藏彬少** 制作，免费使用。
+当需要将大量已拆解书籍整合成主题化手册时，见：
+- `references/content-integration-workflow.md` — 从蒸馏拆解到知识手册的完整工作流（主题分类→并行整合→质量检查→MOC）
+
+---
+
+## 参考文件
+
+- `references/extraction-framework.md` — 概念识别方法论，帮你判断什么值得提取
+- `references/content-integration-workflow.md` — 内容整合工作流（批量整合→主题手册）
+- `references/windows-adaptation.md` — Windows 环境适配（python/PowerShell 命令、中文路径问题）
+- `templates/subagent-prompt.md` — subagent 拆书 prompt 模板（铁律完整版，批量/单本拆解必用）
+- `scripts/quality_check.py` — 输出质量检查脚本，可快速验证拆解文档完整性

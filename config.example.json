@@ -1,0 +1,6 @@
+{
+  "output_path": "/你的输出目录/书籍拆解",
+  "use_subdirs": true,
+  "original_subdir": "01｜书籍原文",
+  "distilled_subdir": "02｜蒸馏拆解"
+}
