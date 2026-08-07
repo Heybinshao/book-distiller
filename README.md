@@ -160,7 +160,8 @@ book-distiller/
 ├── references/
 │   ├── extraction-framework.md       # 概念识别方法论
 │   ├── content-integration-workflow.md  # 批量整合成知识手册
-│   └── windows-adaptation.md         # Windows 环境适配
+│   ├── windows-adaptation.md         # Windows 环境适配
+│   └── common-pitfalls.md            # 维护本 skill 时的常见坑类型
 ├── templates/
 │   └── subagent-prompt.md            # subagent 拆书 prompt 模板（批量拆解必用）
 └── scripts/
