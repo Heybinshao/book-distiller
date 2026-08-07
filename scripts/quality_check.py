@@ -74,6 +74,24 @@ def check_action_items(content: str) -> tuple[bool, str]:
     return has_action, "行动清单 ✅" if has_action else "❌ 未找到行动清单"
 
 
+def check_anti_patterns(content: str) -> tuple[bool, str]:
+    """检查是否有反模式清单"""
+    has_anti = bool(re.search(r'反模式清单', content))
+    return has_anti, "反模式清单 ✅" if has_anti else "❌ 未找到反模式清单"
+
+
+def check_critical_review(content: str) -> tuple[bool, str]:
+    """检查是否有批判性审视"""
+    has_review = bool(re.search(r'批判性审视', content))
+    return has_review, "批判性审视 ✅" if has_review else "❌ 未找到批判性审视"
+
+
+def check_summary(content: str) -> tuple[bool, str]:
+    """检查是否有一句话总结"""
+    has_summary = bool(re.search(r'一句话总结', content))
+    return has_summary, "一句话总结 ✅" if has_summary else "❌ 未找到一句话总结"
+
+
 def main():
     if len(sys.argv) < 2:
         print("用法: python3 quality_check.py <拆解文档路径>")
@@ -93,6 +111,9 @@ def main():
         ("章节覆盖", check_chapters),
         ("文件大小", lambda c: check_file_size(filepath)),
         ("行动清单", check_action_items),
+        ("反模式清单", check_anti_patterns),
+        ("批判性审视", check_critical_review),
+        ("一句话总结", check_summary),
     ]
 
     print(f"质量检查: {filepath.name}")

@@ -4,9 +4,9 @@ description: 【书籍榨干器】从epub/pdf/md文件提取书籍的完整知�
   用户提供文件并说「拆解」「蒸馏」「榨干」时触发。命名规范化提取干净书名作为基准名（去副标题/括号/作者冗余，保留系列号），
   转换后自动清理HTML标签、坏图片链接。输出路径读 config.json（默认知识库收集箱/书籍拆解，不存在自动创建）。
 author: 彬少
-version: 1.2.0
+version: 1.3.0
 created: 2026-06-25
-updated: 2026-08-04
+updated: 2026-08-08
 metadata:
   hermes:
     tags: [书籍, 拆解, 蒸馏, 榨干, epub, pdf]
@@ -92,10 +92,17 @@ else
     echo "   macOS: brew install opencc"
 fi
 
+# 检查 pdftotext（可选，pdf→md 转换备选工具）
+if command -v pdftotext &>/dev/null; then
+    echo "✅ pdftotext 已安装 → 支持 pdf→md 转换"
+else
+    echo "ℹ️  pdftotext 未安装 — pdf 转换将依赖 pandoc（方法1），失败时用 pip install pymupdf（方法3）"
+fi
+
 echo "✅ 环境就绪"
 ```
 
-> **说明**：pandoc 是核心依赖（epub→md 全靠它），python3 用来清理格式垃圾，opencc 只有拆繁体书时才需要。如果检测到缺失，安装后重新运行即可。
+> **说明**：pandoc 是核心依赖（epub→md 全靠它），python3 用来清理格式垃圾，opencc 只有拆繁体书时才需要，pdftotext/pymupdf 是 pdf 转换的备选工具。如果检测到缺失，安装后重新运行即可。
 
 ### 🟡 开始前确认
 
@@ -317,6 +324,12 @@ clean_md('${BOOK_TITLE}.md')
 ```
 
 **路径处理：**
+转换产物 `${BOOK_TITLE}.md` 生成在当前工作目录，**必须移动到原文目录**：
+```bash
+# 确保目录存在并移入原文目录（epub/pdf 转换后必做，md 分支同理）
+mkdir -p "{配置路径}/01｜书籍原文"
+mv "${BOOK_TITLE}.md" "{配置路径}/01｜书籍原文/"
+```
 - 原文：`{配置路径}/01｜书籍原文/{BOOK_TITLE}.md`
 - 最终文档：`{配置路径}/02｜蒸馏拆解/{BOOK_TITLE}-完整拆解.md`
 
@@ -336,6 +349,11 @@ clean_md('${BOOK_TITLE}.md')
 - 未经确认不写入；**绝不自动创建副本**（`xxx 1.md`、`xxx-copy.md` 一律禁止）
 
 ### Step 2: 通读全文并提取
+
+**先确认拆解模式**（用户没说时默认完整拆解）：
+- 用户说「快速拆解/只要重点」→ **只提 P0**（核心命题、关键概念、心智模型/框架），不提取金句/案例/反模式/行动清单
+- 用户说「完整拆解」或没说 → P0+P1+P2 全提（默认路径，见下方完整流程）
+- 优先级定义见 `references/extraction-framework.md` 第三节
 
 用Read工具通读全文（大文件需多次Read，offset递增）。目标是100%覆盖。
 
@@ -546,6 +564,7 @@ for ep in epub_names - md_names:
 
 - epub转md后检查语言
 - 如果是繁体中文 → 用opencc转换为简体：`opencc -c t2s -i input.md -o output.md`
+  - **opencc 未安装时**（环境检测已提示）：先尝试 `brew install opencc`（macOS）/ `winget install opencc` 或官网安装；无法安装时**询问用户**「是安装 opencc 还是接受繁体原文拆解？」，不静默失败、不假装已转简体
 - 如果是英文 → 用agent翻译关键概念的名称
 
 ### 其他格式
@@ -571,10 +590,11 @@ pandoc "$file" -t markdown --wrap=none -o "${BOOK_TITLE}.md"
 
 ```
 if pandoc转换失败:
-  1. 检查pandoc是否安装: pandoc --version
-  2. if 未安装 → 安装: brew install pandoc
-  3. if 版本过旧 → 升级: brew upgrade pandoc
-  4. if 文件损坏 → 检查文件完整性
+  1. **先确认文件路径存在**：`ls -lh "$file"`——路径输错/文件不存在是最常见原因，先排除（不存在 → 让用户重给正确路径，不往下走）
+  2. 检查pandoc是否安装: pandoc --version
+  3. if 未安装 → 安装: brew install pandoc
+  4. if 版本过旧 → 升级: brew upgrade pandoc
+  5. if 文件损坏 → 检查文件完整性
 
 if epub格式异常:
   1. 检查文件扩展名是否正确
@@ -616,6 +636,12 @@ if 用户对输出不满意:
 
 ---
 
+## 常见坑
+
+维护本 skill 时的坑类型（占位符漏列/缺落位命令/检查项漂移等）见 `references/common-pitfalls.md`。
+
+---
+
 ## 最后
 
 **书籍蒸馏的核心承诺：每一本书的知识，都要100%提取出来，不浪费一页纸。**
@@ -636,5 +662,6 @@ if 用户对输出不满意:
 - `references/extraction-framework.md` — 概念识别方法论，帮你判断什么值得提取
 - `references/content-integration-workflow.md` — 内容整合工作流（批量整合→主题手册）
 - `references/windows-adaptation.md` — Windows 环境适配（python/PowerShell 命令、中文路径问题）
+- `references/common-pitfalls.md` — 维护本 skill 时的常见坑类型（占位符漏列/缺落位命令/检查项漂移等）
 - `templates/subagent-prompt.md` — subagent 拆书 prompt 模板（铁律完整版，批量/单本拆解必用）
 - `scripts/quality_check.py` — 输出质量检查脚本，可快速验证拆解文档完整性
