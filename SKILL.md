@@ -4,9 +4,9 @@ description: 【书籍榨干器】从epub/pdf/md文件提取书籍的完整知�
   用户提供文件并说「拆解」「蒸馏」「榨干」时触发。命名规范化提取干净书名作为基准名（去副标题/括号/作者冗余，保留系列号），
   转换后自动清理HTML标签、坏图片链接。输出路径读 config.json（默认知识库收集箱/书籍拆解，不存在自动创建）。
 author: 彬少
-version: 1.1.0
+version: 1.2.0
 created: 2026-06-25
-updated: 2026-07-06
+updated: 2026-08-04
 metadata:
   hermes:
     tags: [书籍, 拆解, 蒸馏, 榨干, epub, pdf]
