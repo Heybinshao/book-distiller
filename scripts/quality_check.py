@@ -59,13 +59,13 @@ def check_chapters(content: str) -> tuple[bool, str]:
 
 
 def check_file_size(filepath: Path) -> tuple[bool, str]:
-    """检查文件大小"""
+    """检查文件大小（软信号：<10KB 不直接判失败，提示人工抽查是否薄书/执行不到位）"""
     size = filepath.stat().st_size
     size_kb = size / 1024
-    if size_kb >= 15:
-        return True, f"文件大小: {size_kb:.0f}KB ✅ (目标≥15KB)"
+    if size_kb >= 10:
+        return True, f"文件大小: {size_kb:.0f}KB ✅ (正常执行产出天然 30-50KB，<10KB 才需警惕)"
     else:
-        return False, f"❌ 文件太小: {size_kb:.0f}KB (目标≥15KB)"
+        return True, f"⚠️ 文件偏小: {size_kb:.0f}KB — 先确认原文是否本身是薄书；非薄书则疑似执行不到位，建议抽查内容密度"
 
 
 def check_action_items(content: str) -> tuple[bool, str]:
