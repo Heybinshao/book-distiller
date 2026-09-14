@@ -241,8 +241,6 @@ book-distiller/
 - macOS（默认主流程）
 - Windows（见 `references/windows-adaptation.md`：python 命令、PowerShell 批量命令、中文路径处理）
 
----
-
 ## 关于作者
 
 **彬少** —— 一个什么都折腾一下的人：装系统 · 玩AI · 搭知识库 · 做设计。这个仓库里的东西都是我自己的卡点长出来的，日常在用，做完就开源。
