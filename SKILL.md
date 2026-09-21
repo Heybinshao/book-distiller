@@ -6,7 +6,7 @@ description: 【书籍榨干器】从epub/pdf/md文件提取书籍的完整知�
   输出路径读 config.json（默认知识库收集箱/书籍拆解，不存在自动创建）。
 author: 彬少
 license: MIT
-version: 2.1.1
+version: 2.2.0
 created: 2026-06-25
 updated: 2026-09-05
 metadata:
