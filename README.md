@@ -1,4 +1,4 @@
-# 📖 书籍榨干器（book-distiller） ![版本](https://img.shields.io/badge/版本-v2.1.1-blue)
+# 📖 书籍榨干器（book-distiller） ![版本](https://img.shields.io/badge/版本-v2.2.0-blue)
 
 > 把你的 epub/pdf/md 丢给 AI，自动拆出核心知识。**不需要任何技术背景。**
 
