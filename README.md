@@ -246,4 +246,4 @@ book-distiller/
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 Binshao
+[CC BY-NC 4.0](LICENSE) © 2026 Binshao
